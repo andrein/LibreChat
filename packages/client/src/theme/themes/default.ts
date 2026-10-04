@@ -86,6 +86,18 @@ export const defaultTheme: IThemeRGB = {
   'rgb-border-field-focus': '33 33 33', // #212121 (gray-800, matching focus-control)
   'rgb-field-fill': '255 255 255', // #fff (white, matching surface-primary)
   'rgb-field-text': '33 33 33', // #212121 (gray-800, matching text-primary)
+  'rgb-surface-canvas': '247 247 248', // matching surface-primary-alt
+  'rgb-surface-user-message': '236 236 236', // matching surface-tertiary
+  'rgb-surface-card': '247 247 248', // matching surface-secondary
+  'rgb-surface-card-hover': '236 236 236', // matching surface-tertiary
+  'rgb-surface-nav-hover': '227 227 227', // matching surface-active-alt
+  'rgb-surface-nav-selected': '227 227 227', // matching surface-active-alt
+  'rgb-surface-tab-selected': '236 236 236', // matching surface-tertiary
+  'rgb-surface-menu': '255 255 255', // matching presentation
+  'rgb-surface-popover': '255 255 255', // matching surface-primary
+  'rgb-border-menu': '227 227 227', // matching border-light
+  'rgb-surface-composer': '255 255 255', // matching surface-chat
+  'rgb-surface-search': '247 247 248', // matching surface-secondary
   'rgb-surface-disabled': '236 236 236', // #ececec (gray-100)
   'rgb-text-disabled': '153 150 150', // #999696 (gray-400)
   'rgb-border-disabled': '227 227 227', // #e3e3e3 (gray-200)

@@ -122,6 +122,18 @@ export const highContrastLightTheme: IThemeRGB = {
   'rgb-border-field-focus': '0 0 0', // #000000 (matching focus-control)
   'rgb-field-fill': '255 255 255', // #ffffff (matching surface-primary)
   'rgb-field-text': '0 0 0', // #000000 (matching text-primary)
+  'rgb-surface-canvas': '255 255 255', // matching surface-primary-alt
+  'rgb-surface-user-message': '255 255 255', // matching surface-tertiary
+  'rgb-surface-card': '255 255 255', // matching surface-secondary
+  'rgb-surface-card-hover': '255 255 255', // matching surface-tertiary
+  'rgb-surface-nav-hover': '212 212 212', // matching surface-active-alt
+  'rgb-surface-nav-selected': '212 212 212', // matching surface-active-alt
+  'rgb-surface-tab-selected': '255 255 255', // matching surface-tertiary
+  'rgb-surface-menu': '255 255 255', // matching presentation
+  'rgb-surface-popover': '255 255 255', // matching surface-primary
+  'rgb-border-menu': '0 0 0', // matching border-light
+  'rgb-surface-composer': '255 255 255', // matching surface-chat
+  'rgb-surface-search': '255 255 255', // matching surface-secondary
   'rgb-surface-disabled': '255 255 255', // #ffffff
   'rgb-text-disabled': '87 87 87', // #575757
   'rgb-border-disabled': '87 87 87', // #575757
@@ -302,6 +314,18 @@ export const highContrastDarkTheme: IThemeRGB = {
   'rgb-border-field-focus': '255 255 255', // #ffffff (matching focus-control)
   'rgb-field-fill': '0 0 0', // #000000 (matching surface-primary)
   'rgb-field-text': '255 255 255', // #ffffff (matching text-primary)
+  'rgb-surface-canvas': '0 0 0', // matching surface-primary-alt
+  'rgb-surface-user-message': '0 0 0', // matching surface-tertiary
+  'rgb-surface-card': '0 0 0', // matching surface-secondary
+  'rgb-surface-card-hover': '0 0 0', // matching surface-tertiary
+  'rgb-surface-nav-hover': '61 61 61', // matching surface-active-alt
+  'rgb-surface-nav-selected': '61 61 61', // matching surface-active-alt
+  'rgb-surface-tab-selected': '0 0 0', // matching surface-tertiary
+  'rgb-surface-menu': '0 0 0', // matching presentation
+  'rgb-surface-popover': '0 0 0', // matching surface-secondary
+  'rgb-border-menu': '255 255 255', // matching border-light
+  'rgb-surface-composer': '0 0 0', // matching surface-chat
+  'rgb-surface-search': '0 0 0', // matching surface-secondary
   'rgb-surface-disabled': '0 0 0', // #000000
   'rgb-text-disabled': '184 184 184', // #b8b8b8
   'rgb-border-disabled': '184 184 184', // #b8b8b8
