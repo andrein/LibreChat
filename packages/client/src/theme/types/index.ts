@@ -72,6 +72,11 @@ export interface IThemeRGB {
   'rgb-surface-chat'?: string;
   'rgb-surface-code'?: string;
   'rgb-surface-code-body'?: string;
+  /** An inline code chip in rendered Markdown. */
+  'rgb-surface-code-inline'?: string;
+  /** The list marker and the blockquote bar in rendered Markdown. */
+  'rgb-prose-bullet'?: string;
+  'rgb-prose-quote-bar'?: string;
   /** The backdrop a QR code is scanned against; keep it light in every mode. */
   'rgb-surface-qr'?: string;
   'rgb-surface-inverted'?: string;
@@ -275,6 +280,9 @@ export interface IThemeVariables {
   '--surface-chat': string;
   '--surface-code': string;
   '--surface-code-body': string;
+  '--surface-code-inline': string;
+  '--prose-bullet': string;
+  '--prose-quote-bar': string;
   '--surface-qr': string;
   '--surface-inverted': string;
   '--surface-inverted-hover': string;
@@ -418,6 +426,9 @@ export interface IThemeColors {
   'surface-chat'?: string;
   'surface-code'?: string;
   'surface-code-body'?: string;
+  'surface-code-inline'?: string;
+  'prose-bullet'?: string;
+  'prose-quote-bar'?: string;
   'surface-qr'?: string;
   'surface-inverted'?: string;
   'surface-inverted-hover'?: string;
@@ -516,6 +527,15 @@ export interface IThemeAppearance {
   /** The corners of a menu panel (`.popover-ui`), a tooltip and a tab trigger, apart from the
    *  control and surface radii; their defaults are the literals those primitives drew. */
   menuRadius: string;
+  /** The corners of the composer's popovers (attach, palette, reasoning), the model selector's
+   *  panel, and the composer's send and mic buttons; their defaults are the literals those
+   *  surfaces drew, so a theme can bring them in line with `menuRadius` without touching the
+   *  control or surface radii. */
+  popoverRadius: string;
+  menuPanelRadius: string;
+  composerActionRadius: string;
+  /** The weight of an inline code chip in rendered Markdown. */
+  inlineCodeWeight: string;
   tooltipRadius: string;
   tabRadius: string;
   /** The narrowest a tab trigger draws; `0` sizes it by its label. */
