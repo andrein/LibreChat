@@ -501,4 +501,71 @@ describe('OboTokenService', () => {
       expect(resultB.access_token).toBe('forced-fresh-token');
     });
   });
+
+  describe('RFC 8693 token exchange', () => {
+    const tokenExchange = { grantType: 'token-exchange', audience: 'mcp-server' };
+
+    it('sends a token-exchange grant naming the audience', async () => {
+      await exchangeOboToken(mockUser, 'user-access-token', 'openid profile', true, undefined, {
+        ...tokenExchange,
+      });
+
+      expect(client.genericGrantRequest).toHaveBeenCalledWith(
+        mockOpenIdConfig,
+        'urn:ietf:params:oauth:grant-type:token-exchange',
+        {
+          subject_token: 'user-access-token',
+          subject_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+          audience: 'mcp-server',
+          scope: 'openid profile',
+        },
+      );
+    });
+
+    it('omits scope when none is configured and sends a resource when one is', async () => {
+      await exchangeOboToken(mockUser, 'user-access-token', undefined, true, undefined, {
+        ...tokenExchange,
+        resource: 'https://mcp.example/mcp',
+      });
+
+      expect(client.genericGrantRequest).toHaveBeenCalledWith(
+        mockOpenIdConfig,
+        'urn:ietf:params:oauth:grant-type:token-exchange',
+        {
+          subject_token: 'user-access-token',
+          subject_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+          audience: 'mcp-server',
+          resource: 'https://mcp.example/mcp',
+        },
+      );
+    });
+
+    it('requires an audience', async () => {
+      await expect(
+        exchangeOboToken(mockUser, 'user-access-token', undefined, true, undefined, {
+          grantType: 'token-exchange',
+        }),
+      ).rejects.toThrow('An audience is required for OBO token exchange');
+      expect(client.genericGrantRequest).not.toHaveBeenCalled();
+    });
+
+    it('caches tokens per audience and resource, leaving jwt-bearer keys unchanged', async () => {
+      const keyFor = (exchangeOptions) =>
+        __internals.buildOboCacheKey({
+          user: mockUser,
+          accessToken: 'user-access-token',
+          scopes: 'openid',
+          exchangeOptions,
+        });
+
+      const keys = new Set([
+        keyFor(tokenExchange),
+        keyFor({ ...tokenExchange, audience: 'other-mcp-server' }),
+        keyFor({ ...tokenExchange, resource: 'https://mcp.example/mcp' }),
+        keyFor(undefined),
+      ]);
+      expect(keys.size).toBe(4);
+      expect(keyFor(undefined)).toBe(expectedCacheKey(mockUser, 'user-access-token', 'openid'));
+    });
+  });
 });

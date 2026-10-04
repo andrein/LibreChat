@@ -242,6 +242,7 @@ describe('resolveOboToken', () => {
       'api://mcp-server-id/Mcp.Tools.ReadWrite',
       true,
       undefined,
+      {},
     );
     expect(result.access_token).toBe('exchanged-mcp-token');
   });
@@ -267,6 +268,7 @@ describe('resolveOboToken', () => {
       'api://mcp-server-id/Mcp.Tools.ReadWrite',
       false,
       undefined,
+      {},
     );
   });
 
@@ -359,6 +361,7 @@ describe('resolveOboToken', () => {
       'api://mcp-server-id/Mcp.Tools.ReadWrite',
       true,
       undefined,
+      {},
     );
 
     expect(result.access_token).toBe('exchanged-mcp-token');
@@ -450,6 +453,25 @@ describe('resolveOboToken', () => {
       'api://other-app/Custom.Scope',
       true,
       undefined,
+      {},
+    );
+  });
+
+  it('passes an RFC 8693 token-exchange audience and resource to the resolver', async () => {
+    const exchangeConfig = {
+      grant_type: 'token-exchange' as const,
+      audience: 'mcp-server',
+      resource: 'https://mcp.example/mcp',
+    };
+    await resolveOboToken(mockUser as IUser, exchangeConfig, mockResolver, liveProvider);
+
+    expect(mockResolver).toHaveBeenCalledWith(
+      mockUser,
+      'live-access-token',
+      undefined,
+      true,
+      undefined,
+      { grantType: 'token-exchange', audience: 'mcp-server', resource: 'https://mcp.example/mcp' },
     );
   });
 
@@ -474,6 +496,7 @@ describe('resolveOboToken', () => {
       'api://mcp-server-id/Mcp.Tools.ReadWrite',
       true,
       identityContext,
+      {},
     );
   });
 

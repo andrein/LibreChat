@@ -182,10 +182,33 @@ const UserOAuthOptionsSchema = OAuthOptionsBaseSchema.omit({
   })
   .superRefine(validateOAuthClientCredentials);
 
-const OboOptionsSchema = z.object({
+/** Microsoft Entra On-Behalf-Of: the jwt-bearer grant with `requested_token_use`. */
+const JwtBearerOboOptionsSchema = z.object({
   /** Scopes to request for the downstream MCP server (e.g., "api://<client-id>/Mcp.Tools.ReadWrite") */
   scopes: z.string().min(1),
+  grant_type: z.literal('jwt-bearer').optional(),
+  /** Token-exchange fields; rejected here so a missing `grant_type` fails loudly. */
+  audience: z.never().optional(),
+  resource: z.never().optional(),
 });
+
+/**
+ * RFC 8693 OAuth 2.0 Token Exchange (Keycloak, authentik, Okta, …): the user's OpenID access
+ * token is exchanged for one issued to this MCP server. `audience` is required — without it
+ * most IdPs issue a token for the requesting client itself, which would hand the MCP server
+ * the equivalent of the user's LibreChat login token.
+ */
+const TokenExchangeOboOptionsSchema = z.object({
+  grant_type: z.literal('token-exchange'),
+  /** The IdP's identifier for this MCP server (its client ID in Keycloak and authentik) */
+  audience: z.string().min(1),
+  /** RFC 8707 resource indicator, for IdPs that bind tokens by resource URI */
+  resource: z.string().url().optional(),
+  /** Optional for token exchange; the IdP decides the issued token's scope */
+  scopes: z.string().min(1).optional(),
+});
+
+const OboOptionsSchema = z.union([JwtBearerOboOptionsSchema, TokenExchangeOboOptionsSchema]);
 
 export const MCP_SERVER_TITLE_PATTERN = new RegExp(
   "^[\\p{L}\\p{N}][\\p{L}\\p{N}\\p{M}'’ -]*$",
@@ -529,7 +552,9 @@ const userUrlSchema = (protocolCheck: (val: string) => boolean, message: string)
  * MCP Server configuration that comes from UI/API input only.
  * Omits server-managed fields like startup, timeout, customUserVars, etc.
  * Allows: title, description, url, iconPath, oauth (user credentials).
- * Admin-only OAuth audience fields are rejected for user-managed servers.
+ * Admin-only OAuth audience fields are rejected for user-managed servers, and so is
+ * OBO token exchange: a user-chosen `audience` would mint tokens for another service
+ * and send them to a URL the user controls.
  *
  * SECURITY: Stdio transport is intentionally excluded from user input.
  * Stdio allows arbitrary command execution and should only be configured
@@ -548,10 +573,12 @@ export const MCPServerUserInputSchema = z.union([
   }),
   userManagedServerFields(SSEOptionsSchema).extend({
     proxy: z.never().optional(),
+    obo: JwtBearerOboOptionsSchema.optional(),
     url: userUrlSchema(isHttpProtocol, 'SSE URL must use http:// or https://'),
   }),
   userManagedServerFields(StreamableHTTPOptionsSchema).extend({
     proxy: z.never().optional(),
+    obo: JwtBearerOboOptionsSchema.optional(),
     url: userUrlSchema(isHttpProtocol, 'Streamable HTTP URL must use http:// or https://'),
   }),
 ]);
