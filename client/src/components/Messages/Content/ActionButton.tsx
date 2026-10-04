@@ -43,7 +43,7 @@ const ActionButton = React.forwardRef<HTMLButtonElement, ActionButtonProps>(
         className={cn(
           'text-text-secondary inline-flex items-center justify-center transition-all duration-200 ease-out select-none',
           'hover:bg-surface-hover hover:text-text-primary',
-          'focus-visible:outline-border-heavy focus-visible:outline focus-visible:outline-2',
+          'focus-visible:outline-focus-subtle focus-visible:outline focus-visible:outline-2',
           iconOnly ? 'rounded-lg p-1.5' : 'ml-auto gap-2 rounded-md px-2 py-1',
           className,
         )}
