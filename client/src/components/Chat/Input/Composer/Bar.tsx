@@ -158,7 +158,7 @@ export function ChipModes({ modes }: ChipModesProps) {
         gutter={6}
         unmountOnHide
         onClick={(event) => event.stopPropagation()}
-        className="animate-composer-popover border-border-light bg-presentation z-50 min-w-[10rem] rounded-xl border p-1 shadow-lg outline-hidden"
+        className="animate-composer-popover border-border-light bg-presentation rounded-theme-menu-panel z-50 min-w-[10rem] border p-1 shadow-lg outline-hidden"
       >
         {modes.map((mode) => (
           <Ariakit.MenuItem
