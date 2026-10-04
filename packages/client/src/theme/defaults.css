@@ -485,12 +485,16 @@ html {
 }
 
 /* A root other than the document one that a legacy palette themes (`THEME_SCOPE_ATTRIBUTE` in
-   utils/applyTheme.ts) keeps its avatar backdrop on its own surfaces, following the mode, as the
-   document root's alias above does. An explicit avatar-placeholder set inline still wins. */
+   utils/applyTheme.ts) keeps its avatar backdrop, code chip, list marker and quote bar on its own
+   surfaces, following the mode, as the document root's aliases above do. An explicit avatar-placeholder set inline still wins. */
 [data-theme-scope] {
   --avatar-placeholder: var(--surface-secondary);
+  --surface-code-inline: var(--surface-active-alt);
+  --prose-bullet: var(--border-medium);
+  --prose-quote-bar: var(--border-medium);
 }
 .dark [data-theme-scope],
 [data-theme-scope].dark {
   --avatar-placeholder: var(--surface-tertiary);
+  --surface-code-inline: var(--surface-hover-alt);
 }

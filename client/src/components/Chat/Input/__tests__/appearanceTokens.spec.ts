@@ -15,6 +15,8 @@ const themedControls = [
   ['TokenUsage/index.tsx', ['size-theme-control', 'rounded-theme-control-round']],
   ['Files/AttachFile.tsx', ['size-theme-control', 'rounded-theme-control-round']],
   ['CodeApprovalMenu.tsx', ['composerControlClasses()', 'md:px-theme-control-x']],
+  /** The dictation mic and its send share the submit slot's corner. */
+  ['Composer/Bar.tsx', ['shape="composer"']],
 ] as const;
 
 describe('Composer appearance tokens', () => {
