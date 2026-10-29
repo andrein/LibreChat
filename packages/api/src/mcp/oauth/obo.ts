@@ -10,8 +10,34 @@ import { extractOpenIDTokenInfo, isOpenIDTokenValid } from '~/utils/oidc';
 import { detachOnAbort } from '~/utils/promises';
 import { isAbortError } from '~/utils/errors';
 
-export interface OboConfig {
-  scopes: string;
+export type OboConfig =
+  | { scopes: string; grant_type?: 'jwt-bearer' }
+  | { grant_type: 'token-exchange'; audience: string; resource?: string; scopes?: string };
+
+/** How the downstream token is obtained; omitted means Entra's jwt-bearer On-Behalf-Of grant. */
+export interface OboExchangeOptions {
+  grantType?: 'jwt-bearer' | 'token-exchange';
+  audience?: string;
+  resource?: string;
+}
+
+/** The exchange options an OBO config implies. */
+export function oboExchangeOptions(oboConfig: OboConfig): OboExchangeOptions {
+  if (oboConfig.grant_type === 'token-exchange') {
+    return {
+      grantType: 'token-exchange',
+      audience: oboConfig.audience,
+      resource: oboConfig.resource,
+    };
+  }
+  return {};
+}
+
+/** A log-friendly description of what an OBO config requests. */
+export function describeOboConfig(oboConfig: OboConfig): string {
+  return oboConfig.grant_type === 'token-exchange'
+    ? `token exchange for audience ${oboConfig.audience}`
+    : `jwt-bearer for scopes ${oboConfig.scopes}`;
 }
 
 /**
@@ -21,9 +47,10 @@ export interface OboConfig {
 export type OboTokenResolver = (
   user: IUser,
   accessToken: string,
-  scopes: string,
+  scopes: string | undefined,
   fromCache?: boolean,
   identityContext?: AuthIdentityContext,
+  options?: OboExchangeOptions,
 ) => Promise<{ access_token: string; expires_in?: number; expires_at?: number }>;
 
 /**
@@ -48,6 +75,7 @@ export type UpstreamTokenProvider = (options?: {
 /** Target resolved from server configuration after the OBO trust check. Scopes are not an audience. */
 export interface UpstreamTokenTarget {
   readonly mcpServer: string;
+  /** Empty for a token exchange configured without scopes. */
   readonly scopes: string;
 }
 
@@ -345,6 +373,7 @@ export async function resolveOboToken(
       oboConfig.scopes,
       !forceRefresh,
       identityContext,
+      oboExchangeOptions(oboConfig),
     );
 
     if (!response?.access_token) {

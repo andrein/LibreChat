@@ -162,7 +162,7 @@ it('reports missing unattended OBO credentials without offering a browser reconn
     const provider = createLazyOboUpstreamTokenProvider(
       options.upstreamTokenProviderResolver!,
       options.signal,
-      { mcpServer: options.serverName, scopes: options.serverConfig!.obo!.scopes },
+      { mcpServer: options.serverName, scopes: options.serverConfig!.obo!.scopes ?? '' },
     );
     await provider();
     throw new Error('A missing provider must never connect');

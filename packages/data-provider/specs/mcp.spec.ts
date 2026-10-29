@@ -7,6 +7,49 @@ import {
   MAX_MCP_ICON_PATH_LENGTH,
 } from '../src/mcp';
 
+describe('OBO token exchange (RFC 8693)', () => {
+  const server = (obo: unknown) =>
+    MCPOptionsSchema.safeParse({ type: 'streamable-http', url: 'https://mcp.example/mcp', obo });
+
+  it('accepts token exchange with an audience and no scopes', () => {
+    expect(server({ grant_type: 'token-exchange', audience: 'mcp-server' }).success).toBe(true);
+  });
+
+  it('accepts token exchange with scopes and a resource', () => {
+    const result = server({
+      grant_type: 'token-exchange',
+      audience: 'mcp-server',
+      resource: 'https://mcp.example/mcp',
+      scopes: 'openid profile',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects token exchange without an audience', () => {
+    expect(server({ grant_type: 'token-exchange', scopes: 'openid' }).success).toBe(false);
+  });
+
+  it('rejects an audience without the token-exchange grant', () => {
+    expect(server({ scopes: 'openid', audience: 'mcp-server' }).success).toBe(false);
+  });
+
+  it('still accepts the jwt-bearer form, explicit or implied', () => {
+    expect(server({ scopes: 'api://id/Scope' }).success).toBe(true);
+    expect(server({ scopes: 'api://id/Scope', grant_type: 'jwt-bearer' }).success).toBe(true);
+  });
+
+  it('keeps token exchange out of user-managed servers', () => {
+    const user = (obo: unknown) =>
+      MCPServerUserInputSchema.safeParse({
+        type: 'streamable-http',
+        url: 'https://mcp.example/mcp',
+        obo,
+      });
+    expect(user({ grant_type: 'token-exchange', audience: 'mcp-server' }).success).toBe(false);
+    expect(user({ scopes: 'api://id/Scope' }).success).toBe(true);
+  });
+});
+
 describe('MCP server title validation', () => {
   const titleCases = [
     ['hyphenated ASCII title', 'Read-Only Tools'],

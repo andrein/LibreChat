@@ -501,4 +501,92 @@ describe('OboTokenService', () => {
       expect(resultB.access_token).toBe('forced-fresh-token');
     });
   });
+  describe('RFC 8693 token exchange', () => {
+    const tokenExchange = { grantType: 'token-exchange', audience: 'mcp-server' };
+
+    it('sends a token-exchange grant naming the audience', async () => {
+      await exchangeOboToken(
+        mockUser,
+        'user-access-token',
+        'openid profile',
+        true,
+        undefined,
+        tokenExchange,
+      );
+
+      expect(client.genericGrantRequest).toHaveBeenCalledWith(
+        mockOpenIdConfig,
+        'urn:ietf:params:oauth:grant-type:token-exchange',
+        {
+          subject_token: 'user-access-token',
+          subject_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+          audience: 'mcp-server',
+          scope: 'openid profile',
+        },
+      );
+    });
+
+    it('omits scope when none is configured and sends a resource when one is', async () => {
+      await exchangeOboToken(mockUser, 'user-access-token', undefined, true, undefined, {
+        ...tokenExchange,
+        resource: 'https://mcp.example/mcp',
+      });
+
+      expect(client.genericGrantRequest).toHaveBeenCalledWith(
+        mockOpenIdConfig,
+        'urn:ietf:params:oauth:grant-type:token-exchange',
+        {
+          subject_token: 'user-access-token',
+          subject_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+          audience: 'mcp-server',
+          resource: 'https://mcp.example/mcp',
+        },
+      );
+    });
+
+    it('requires an audience', async () => {
+      await expect(
+        exchangeOboToken(mockUser, 'user-access-token', undefined, true, undefined, {
+          grantType: 'token-exchange',
+        }),
+      ).rejects.toThrow('An audience is required for OBO token exchange');
+      expect(client.genericGrantRequest).not.toHaveBeenCalled();
+    });
+
+    it('keeps the jwt-bearer On-Behalf-Of grant by default', async () => {
+      await exchangeOboToken(mockUser, 'user-access-token', 'api://scope');
+
+      expect(client.genericGrantRequest).toHaveBeenCalledWith(
+        mockOpenIdConfig,
+        'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        {
+          scope: 'api://scope',
+          assertion: 'user-access-token',
+          requested_token_use: 'on_behalf_of',
+        },
+      );
+    });
+
+    it('caches tokens per audience and resource', async () => {
+      await exchangeOboToken(
+        mockUser,
+        'user-access-token',
+        undefined,
+        true,
+        undefined,
+        tokenExchange,
+      );
+      await exchangeOboToken(mockUser, 'user-access-token', undefined, true, undefined, {
+        grantType: 'token-exchange',
+        audience: 'other-mcp-server',
+      });
+      await exchangeOboToken(mockUser, 'user-access-token', undefined, true, undefined, {
+        ...tokenExchange,
+        resource: 'https://mcp.example/mcp',
+      });
+
+      const keys = mockTokensCache.set.mock.calls.map(([key]) => key);
+      expect(new Set(keys).size).toBe(3);
+    });
+  });
 });

@@ -112,7 +112,8 @@ export function useMCPServerForm({ server, onSuccess, onClose }: UseMCPServerFor
           oauth_token_url: server.config.oauth?.token_url || '',
           oauth_scope: server.config.oauth?.scope || '',
           oauth_token_exchange_method: server.config.oauth?.token_exchange_method,
-          obo_scopes: 'obo' in server.config && server.config.obo ? server.config.obo.scopes : '',
+          obo_scopes:
+            'obo' in server.config && server.config.obo ? (server.config.obo.scopes ?? '') : '',
           server_id: server.serverName,
         },
         trust: true, // Pre-checked for existing servers

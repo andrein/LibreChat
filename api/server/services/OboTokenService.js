@@ -18,6 +18,34 @@ const getLogStores = require('~/cache/getLogStores');
 const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
 const RETRYABLE_ERROR_CODES = new Set(['ETIMEDOUT', 'ECONNRESET', 'EAI_AGAIN', 'ENOTFOUND']);
 const OBO_RETRY_DELAY_MS = 300;
+const GRANT_TYPE_JWT_BEARER = 'urn:ietf:params:oauth:grant-type:jwt-bearer';
+const GRANT_TYPE_TOKEN_EXCHANGE = 'urn:ietf:params:oauth:grant-type:token-exchange';
+const TOKEN_TYPE_ACCESS_TOKEN = 'urn:ietf:params:oauth:token-type:access_token';
+
+/**
+ * The grant request for one exchange. Entra's On-Behalf-Of is jwt-bearer with
+ * `requested_token_use`; RFC 8693 token exchange names the target with `audience`.
+ */
+function buildGrantRequest({ accessToken, scopes, grantType, audience, resource }) {
+  if (grantType === 'token-exchange') {
+    const parameters = {
+      subject_token: accessToken,
+      subject_token_type: TOKEN_TYPE_ACCESS_TOKEN,
+      audience,
+    };
+    if (resource) {
+      parameters.resource = resource;
+    }
+    if (scopes) {
+      parameters.scope = scopes;
+    }
+    return { grant: GRANT_TYPE_TOKEN_EXCHANGE, parameters };
+  }
+  return {
+    grant: GRANT_TYPE_JWT_BEARER,
+    parameters: { scope: scopes, assertion: accessToken, requested_token_use: 'on_behalf_of' },
+  };
+}
 
 /**
  * In-flight OBO exchanges keyed by identity tuple, scopes, and upstream assertion hash.
@@ -81,27 +109,36 @@ function sha256(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
 
-function buildOboCacheKey({ user, accessToken, scopes, identityContext }) {
+function buildOboCacheKey({ user, accessToken, scopes, identityContext, exchange = {} }) {
   const tuple = createOpenIDOboIdentityTuple({ user, identityContext });
   if (!tuple) {
     return null;
   }
 
-  return [serializeAuthIdentityTuple(tuple), scopes, sha256(accessToken)].join('\x1f');
+  // Distinct audiences must never share a cached token.
+  const target =
+    exchange.grantType === 'token-exchange'
+      ? ['token-exchange', exchange.audience, exchange.resource ?? '', scopes ?? '']
+      : [scopes];
+  return [serializeAuthIdentityTuple(tuple), ...target, sha256(accessToken)].join('\x1f');
 }
 
 async function delay(ms) {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function performOboExchange({ user, accessToken, scopes, config, tokensCache, cacheKey }) {
+async function performOboExchange({
+  user,
+  accessToken,
+  scopes,
+  exchange,
+  config,
+  tokensCache,
+  cacheKey,
+}) {
   const userLogId = getUserLogId(user);
-  const requestGrant = async () =>
-    client.genericGrantRequest(config, 'urn:ietf:params:oauth:grant-type:jwt-bearer', {
-      scope: scopes,
-      assertion: accessToken,
-      requested_token_use: 'on_behalf_of',
-    });
+  const { grant, parameters } = buildGrantRequest({ accessToken, scopes, ...exchange });
+  const requestGrant = async () => client.genericGrantRequest(config, grant, parameters);
 
   let grantResponse;
   try {
@@ -150,7 +187,7 @@ async function performOboExchange({ user, accessToken, scopes, config, tokensCac
 
 /**
  * Exchange a user's access token for a downstream-scoped token via the
- * OAuth 2.0 On-Behalf-Of (jwt-bearer) grant.
+ * OAuth 2.0 On-Behalf-Of (jwt-bearer) grant, or RFC 8693 token exchange.
  *
  * Concurrent callers for the same identity/scopes/assertion key share a single
  * upstream exchange (see `inFlightExchanges`) so a fan-out of tool calls right
@@ -163,17 +200,33 @@ async function performOboExchange({ user, accessToken, scopes, config, tokensCac
  *   in-flight exchange. When false, bypass both and force a fresh exchange.
  * @param {import('@librechat/api').AuthIdentityContext} [identityContext] - Real request identity
  *   context used to scope OBO cache keys without exposing tenant/issuer placeholders.
+ * @param {Object} [options] - `grantType` ('jwt-bearer' default, or 'token-exchange'
+ *   for RFC 8693), and for token exchange the required `audience` (the target MCP
+ *   server) and optional RFC 8707 `resource`. `scopes` is optional for token exchange.
  * @returns {Promise<Object>} Token response with access_token and expires_in
  */
-async function exchangeOboToken(user, accessToken, scopes, fromCache = true, identityContext) {
+async function exchangeOboToken(
+  user,
+  accessToken,
+  scopes,
+  fromCache = true,
+  identityContext,
+  options = {},
+) {
+  const { grantType = 'jwt-bearer', audience, resource } = options;
   if (!accessToken) {
     throw new Error('Access token is required for OBO exchange');
   }
 
   const userLogId = getUserLogId(user);
-  if (!scopes) {
+  if (grantType === 'token-exchange') {
+    if (!audience) {
+      throw new Error('An audience is required for OBO token exchange');
+    }
+  } else if (!scopes) {
     throw new Error('Scopes are required for OBO exchange');
   }
+  const exchange = { grantType, audience, resource };
 
   const config = getOpenIdConfig();
   if (!config) {
@@ -185,6 +238,7 @@ async function exchangeOboToken(user, accessToken, scopes, fromCache = true, ide
     accessToken,
     scopes,
     identityContext,
+    exchange,
   });
   if (!cacheKey) {
     throw new Error('User must be authenticated via OpenID to perform OBO token exchange');
@@ -211,13 +265,15 @@ async function exchangeOboToken(user, accessToken, scopes, fromCache = true, ide
   }
 
   logger.debug(
-    `[OboTokenService] Requesting new OBO token for user: ${userLogId}, scopes: ${scopes}`,
+    `[OboTokenService] Requesting new OBO token for user: ${userLogId}, grant: ${grantType}, ` +
+      (grantType === 'token-exchange' ? `audience: ${audience}` : `scopes: ${scopes}`),
   );
 
   const exchangePromise = performOboExchange({
     user,
     accessToken,
     scopes,
+    exchange,
     config,
     tokensCache,
     cacheKey,

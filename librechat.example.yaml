@@ -749,6 +749,16 @@ actions:
 #       - -y
 #       - "mcp-obsidian"
 #       - /path/to/obsidian/vault
+#   delegated-api:
+#     type: streamable-http
+#     url: https://mcp.example.com/mcp
+#     # Sends a per-user token issued for this server, exchanged from the user's OpenID token
+#     # (requires OpenID login with OPENID_REUSE_TOKENS=true). Config-file only.
+#     obo:
+#       grant_type: token-exchange  # RFC 8693 (Keycloak, authentik, Okta, …); omit for Entra OBO
+#       audience: mcp-server-client-id  # the IdP's identifier for this MCP server
+#       # resource: https://mcp.example.com/mcp  # RFC 8707, for IdPs that bind by resource
+#       # scopes: openid profile  # optional for token exchange
 
 # Definition of custom endpoints
 endpoints:

@@ -57,7 +57,11 @@ import {
   usesDirectOpenIDBearerRecovery,
 } from './openid';
 import { PENDING_STALE_MS, FlowStateNotFoundError, normalizeExpiresAt } from '~/flow/manager';
-import { createLazyOboUpstreamTokenProvider, awaitOboOperation } from '~/mcp/oauth/obo';
+import {
+  createLazyOboUpstreamTokenProvider,
+  awaitOboOperation,
+  describeOboConfig,
+} from '~/mcp/oauth/obo';
 import { preProcessGraphTokens } from '~/utils/graph';
 import { isAbortError } from '~/utils/errors';
 import { MCPConnection } from './connection';
@@ -739,7 +743,7 @@ export class MCPConnectionFactory {
       this.upstreamTokenProvider = createLazyOboUpstreamTokenProvider(
         this.upstreamTokenProviderResolver,
         this.signal,
-        { mcpServer: this.serverName, scopes: oboConfig.scopes },
+        { mcpServer: this.serverName, scopes: oboConfig.scopes ?? '' },
       );
     }
     if (!this.upstreamTokenProvider) {
@@ -767,7 +771,7 @@ export class MCPConnectionFactory {
       }
     }
 
-    logger.info(`${this.logPrefix} Resolving OBO token for scopes: ${oboConfig.scopes}`);
+    logger.info(`${this.logPrefix} Resolving OBO token: ${describeOboConfig(oboConfig)}`);
     return awaitOboOperation(
       resolveOboToken(
         this.user,
